@@ -5,6 +5,7 @@ setup(
     py_modules=["code_scratchpads"],
     version="0.0.1",
     install_requires=[
+        "aiohttp",
         "uvicorn",
         "fastapi",
     ],
