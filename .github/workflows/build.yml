@@ -91,6 +91,10 @@ jobs:
 
       - name: Dist
         run: cargo build --release --target-dir dist/
+      
+      - name: Add chmod +x to dist/release/code-scratchpads
+        if: ${{ matrix.os }} != 'windows-latest'
+        run: chmod +x ./dist/release/code-scratchpads
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
@@ -123,7 +127,9 @@ jobs:
           fetch-depth: ${{ env.FETCH_DEPTH }}
 
       - name: Dist
-        run: cargo build --release --target-dir dist/
+        run: |
+          cargo build --release --target-dir dist/
+          chmod +x ./dist/release/code-scratchpads
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v1
