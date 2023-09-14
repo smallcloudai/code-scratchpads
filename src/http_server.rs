@@ -5,6 +5,11 @@ use std::io::Write;
 use std::sync::Arc;
 use std::sync::RwLock as StdRwLock;
 use tokio::sync::RwLock as ARwLock;
+// use tokio::stream::StreamExt;
+// use tokio_stream::{self as stream, StreamExt};
+use tokio_stream::StreamExt;
+
+
 use hyper::{Body, Request, Response, Server};
 use hyper::{Method, StatusCode};
 use hyper::server::conn::AddrStream;
@@ -142,7 +147,8 @@ async fn _scratchpad_interaction(
     };
     let streaming = false;
     if !streaming {
-        let model_says = if endpoint_style == "hf" {
+        // let model_says = if endpoint_style == "hf" {
+        let mut model_says =
             forward_to_hf_endpoint::forward_to_hf_style_endpoint(
                 bearer.clone(),
                 &model_name,
@@ -150,58 +156,78 @@ async fn _scratchpad_interaction(
                 &client,
                 &endpoint_template,
                 &parameters,
+                true,
             ).await
-        } else {
-            forward_to_openai_endpoint::forward_to_openai_style_endpoint(
-                bearer.clone(),
-                &model_name,
-                &prompt,
-                &client,
-                &endpoint_template,
-                &parameters,
-            ).await
-        }.map_err(|e|
-            explain_whats_wrong(StatusCode::INTERNAL_SERVER_ERROR, format!("forward_to_hf_endpoint: {}", e))
-        )?;
-        info!("forward_to_hf_endpoint {:?}", t2.elapsed());
-        let scratchpad_result: Result<serde_json::Value, String>;
-        if let Some(hf_arr) = model_says.as_array() {
-            let choices = hf_arr.iter()
-                .map(|x| {
-                    x.get("generated_text").unwrap().as_str().unwrap().to_string()
-                }).collect::<Vec<_>>();
-            scratchpad_result = scratchpad.response_n_choices(choices);
-
-        } else if let Some(oai_choices) = model_says.get("choices") {
-            let choices = oai_choices.as_array().unwrap().iter()
-               .map(|x| {
-                    x.get("text").unwrap().as_str().unwrap().to_string()
-                }).collect::<Vec<_>>();
-            scratchpad_result = scratchpad.response_n_choices(choices);
-            // TODO: "model", "finish_reason"?
-
-        } else if let Some(err) = model_says.get("error") {
-            return Ok(explain_whats_wrong(StatusCode::INTERNAL_SERVER_ERROR,
-                format!("model says: {:?}", err)
-            ));
-
-        } else {
-            return Ok(explain_whats_wrong(StatusCode::INTERNAL_SERVER_ERROR,
-                format!("unrecognized response: {:?}", model_says))
-            );
+            .map_err(|e|
+                explain_whats_wrong(StatusCode::INTERNAL_SERVER_ERROR, format!("forward_to_hf_endpoint: {}", e))
+            )?;
+        // model_says is Stream<Item = Result<String, reqwest_streams::error::StreamBodyError>> + Send>>
+        while let Some(x) = model_says.next().await {
+            info!("model_says {:?}", x);
         }
-        if let Err(scratchpad_result_str) = scratchpad_result {
-            return Ok(explain_whats_wrong(StatusCode::INTERNAL_SERVER_ERROR,
-                format!("scratchpad: {}", scratchpad_result_str))
-            );
-        }
-        let txt = serde_json::to_string(&scratchpad_result.unwrap()).unwrap();
-        info!("handle_v1_code_completion return {}", txt);
+
+
+        // } else {
+        //     forward_to_openai_endpoint::forward_to_openai_style_endpoint(
+        //         bearer.clone(),
+        //         &model_name,
+        //         &prompt,
+        //         &client,
+        //         &endpoint_template,
+        //         &parameters,
+        //     ).await
+        // }.map_err(|e|
+        //     explain_whats_wrong(StatusCode::INTERNAL_SERVER_ERROR, format!("forward_to_hf_endpoint: {}", e))
+        // info!("forward_to_hf_endpoint {:?}", t2.elapsed());
+        // let scratchpad_result: Result<serde_json::Value, String>;
+        // if let Some(hf_arr) = model_says.as_array() {
+        //     let choices = hf_arr.iter()
+        //         .map(|x| {
+        //             x.get("generated_text").unwrap().as_str().unwrap().to_string()
+        //         }).collect::<Vec<_>>();
+        //     scratchpad_result = scratchpad.response_n_choices(choices);
+
+        // } else if let Some(oai_choices) = model_says.get("choices") {
+        //     let choices = oai_choices.as_array().unwrap().iter()
+        //        .map(|x| {
+        //             x.get("text").unwrap().as_str().unwrap().to_string()
+        //         }).collect::<Vec<_>>();
+        //     scratchpad_result = scratchpad.response_n_choices(choices);
+        //     // TODO: "model", "finish_reason"?
+
+        // } else if let Some(err) = model_says.get("error") {
+        //     return Ok(explain_whats_wrong(StatusCode::INTERNAL_SERVER_ERROR,
+        //         format!("model says: {:?}", err)
+        //     ));
+
+        // } else {
+        //     return Ok(explain_whats_wrong(StatusCode::INTERNAL_SERVER_ERROR,
+        //         format!("unrecognized response: {:?}", model_says))
+        //     );
+        // }
+        // if let Err(scratchpad_result_str) = scratchpad_result {
+        //     return Ok(explain_whats_wrong(StatusCode::INTERNAL_SERVER_ERROR,
+        //         format!("scratchpad: {}", scratchpad_result_str))
+        //     );
+        // }
+        // let txt = serde_json::to_string(&scratchpad_result.unwrap()).unwrap();
+        // info!("handle_v1_code_completion return {}", txt);
+        // let response = Response::builder()
+        //     .header("Content-Type", "application/json")
+        //     .body(Body::from(txt))
+        //     .unwrap();
         let response = Response::builder()
             .header("Content-Type", "application/json")
-            .body(Body::from(txt))
+            .body(Body::from("hello world"))
             .unwrap();
         return Ok(response);
+    } else {
+        // fn response_streaming(   // Only 1 choice, but streaming. Returns delta the user should see, and finished flag
+        //     &self,
+        //     delta: String,
+        // ) -> Result<(serde_json::Value, bool), String>;
+
+
     }
     return Ok(
         explain_whats_wrong(StatusCode::INTERNAL_SERVER_ERROR, "streaming not yet implemented".to_string())
@@ -250,7 +276,6 @@ async fn handle_request(
     info!("{} completed in {:?}", path, t0.elapsed());
     return Ok(result.unwrap());
 }
-
 
 pub async fn start_server(
     global_context: Arc<ARwLock<GlobalContext>>,
