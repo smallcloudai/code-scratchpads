@@ -7,7 +7,7 @@ use std::sync::RwLock as StdRwLock;
 use tokio::sync::RwLock as ARwLock;
 // use tokio::stream::StreamExt;
 // use tokio_stream::{self as stream, StreamExt};
-use tokio_stream::StreamExt;
+// use tokio_stream::StreamExt;
 
 
 use hyper::{Body, Request, Response, Server};
@@ -22,7 +22,12 @@ use crate::recommendations;
 use crate::scratchpads;
 use crate::scratchpad_abstract::CodeCompletionScratchpad;
 use crate::forward_to_hf_endpoint;
-use crate::forward_to_openai_endpoint;
+// use crate::forward_to_openai_endpoint;
+// use reqwest_eventsource::EventSource;
+use reqwest_eventsource::Event;
+use futures::StreamExt;
+
+
 use crate::call_validation::{CodeCompletionPost, SamplingParameters};
 use crate::global_context::GlobalContext;
 use crate::recommendations::CodeAssistantRecommendations;
@@ -148,7 +153,7 @@ async fn _scratchpad_interaction(
     let streaming = false;
     if !streaming {
         // let model_says = if endpoint_style == "hf" {
-        let mut model_says =
+        let mut event_source =
             forward_to_hf_endpoint::forward_to_hf_style_endpoint(
                 bearer.clone(),
                 &model_name,
@@ -161,11 +166,22 @@ async fn _scratchpad_interaction(
             .map_err(|e|
                 explain_whats_wrong(StatusCode::INTERNAL_SERVER_ERROR, format!("forward_to_hf_endpoint: {}", e))
             )?;
-        // model_says is Stream<Item = Result<String, reqwest_streams::error::StreamBodyError>> + Send>>
-        while let Some(x) = model_says.next().await {
-            info!("model_says {:?}", x);
+
+        while let Some(event) = event_source.next().await {
+            match event {
+                Ok(Event::Open) => println!("Connection Open!"),
+                Ok(Event::Message(message)) => println!("Message: {:#?}", message),
+                Err(err) => {
+                    println!("Error: {}", err);
+                    event_source.close();
+                }
+            }
         }
 
+        // model_says is Stream<Item = Result<String, reqwest_streams::error::StreamBodyError>> + Send>>
+        // while let Some(x) = model_says.next().await {
+        //     info!("model_says {:?}", x);
+        // }
 
         // } else {
         //     forward_to_openai_endpoint::forward_to_openai_style_endpoint(
