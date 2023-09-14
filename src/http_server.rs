@@ -154,14 +154,13 @@ async fn _scratchpad_interaction(
     if !streaming {
         // let model_says = if endpoint_style == "hf" {
         let mut event_source =
-            forward_to_hf_endpoint::forward_to_hf_style_endpoint(
+            forward_to_hf_endpoint::forward_to_hf_style_endpoint_streaming(
                 bearer.clone(),
                 &model_name,
                 &prompt,
                 &client,
                 &endpoint_template,
                 &parameters,
-                true,
             ).await
             .map_err(|e|
                 explain_whats_wrong(StatusCode::INTERNAL_SERVER_ERROR, format!("forward_to_hf_endpoint: {}", e))
