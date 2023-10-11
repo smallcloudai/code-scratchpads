@@ -5,8 +5,10 @@ use crate::call_validation::ChatPost;
 use crate::call_validation::ChatMessage;
 use crate::call_validation::SamplingParameters;
 use crate::scratchpads::chat_utils_limit_history::limit_messages_history;
+use crate::vecdb_search;
 use std::sync::Arc;
-use std::sync::RwLock;
+use std::sync::RwLock as StdRwLock;
+use std::sync::Mutex;
 
 use tokenizers::Tokenizer;
 use tracing::info;
@@ -14,7 +16,7 @@ use tracing::info;
 const DEBUG: bool = true;
 
 
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct ChatLlama2 {
     pub t: HasTokenizerAndEot,
     pub dd: DeltaDeltaChatStreamer,
@@ -22,12 +24,14 @@ pub struct ChatLlama2 {
     pub keyword_s: String, // "SYSTEM:" keyword means it's not one token
     pub keyword_slash_s: String,
     pub default_system_message: String,
+    pub vecdb_search: Arc<Mutex<Box<dyn vecdb_search::VecdbSearch>>>,
 }
 
 impl ChatLlama2 {
     pub fn new(
-        tokenizer: Arc<RwLock<Tokenizer>>,
+        tokenizer: Arc<StdRwLock<Tokenizer>>,
         post: ChatPost,
+        vecdb_search: Arc<Mutex<Box<dyn vecdb_search::VecdbSearch>>>,
     ) -> Self {
         ChatLlama2 {
             t: HasTokenizerAndEot::new(tokenizer),
@@ -36,6 +40,7 @@ impl ChatLlama2 {
             keyword_s: "<s>".to_string(),
             keyword_slash_s: "</s>".to_string(),
             default_system_message: "".to_string(),
+            vecdb_search: vecdb_search
         }
     }
 }

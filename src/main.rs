@@ -18,13 +18,23 @@ mod completion_cache;
 mod telemetry_basic;
 mod telemetry_snippets;
 mod telemetry_storage;
+mod vecdb_search;
 mod lsp;
+use crate::vecdb_search::VecdbSearch;
+
+
+async fn test_vecdb()
+{
+    let mut v = vecdb_search::VecdbSearchTest::new();
+    let res = v.search("ParallelTasksV3").await;
+    info!("{:?}", res);
+}
 
 
 #[tokio::main]
 async fn main() {
     let home_dir = home::home_dir().ok_or(()).expect("failed to find home dir");
-    let cache_dir = home_dir.join(".cache/refact");
+    let cache_dir = home_dir.join(".cache").join("refact");
     let (gcx, ask_shutdown_receiver, cmdline) = global_context::create_global_context(cache_dir.clone()).await;
     let (logs_writer, _guard) = if cmdline.logs_stderr {
         tracing_appender::non_blocking(std::io::stderr())
@@ -44,6 +54,8 @@ async fn main() {
         .init();
     info!("started");
     info!("cache dir: {}", cache_dir.display());
+    test_vecdb().await;
+    return;
 
     let gcx2 = gcx.clone();
     let gcx3 = gcx.clone();

@@ -5,7 +5,7 @@ use std::fmt::Display;
 use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::RwLock as ARwLock;
-use tower_lsp::jsonrpc::{Error, Result};
+use tower_lsp::jsonrpc::Result;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{ClientSocket, LanguageServer, LspService};
 use tracing::info;

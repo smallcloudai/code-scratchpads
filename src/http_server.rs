@@ -193,11 +193,13 @@ async fn handle_v1_chat(
         ScratchError::new(StatusCode::INTERNAL_SERVER_ERROR,format!("Tokenizer: {}", e))
     )?;
 
+    let vecdb_search = ;
     let mut scratchpad = scratchpads::create_chat_scratchpad(
         chat_post.clone(),
         &scratchpad_name,
         &scratchpad_patch,
         tokenizer_arc.clone(),
+        vecdb_search,
     ).map_err(|e|
         ScratchError::new(StatusCode::BAD_REQUEST, e)
     )?;

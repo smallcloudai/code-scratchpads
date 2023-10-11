@@ -10,6 +10,7 @@ use std::io::Write;
 use crate::caps::CodeAssistantCaps;
 use crate::completion_cache::CompletionCache;
 use crate::telemetry_storage;
+use crate::vecdb_search::VecdbSearch;
 
 
 #[derive(Debug, StructOpt, Clone)]
@@ -44,6 +45,7 @@ pub struct GlobalContext {
     pub cmdline: CommandLine,
     pub completions_cache: Arc<StdRwLock<CompletionCache>>,
     pub telemetry: Arc<StdRwLock<telemetry_storage::Storage>>,
+    pub vecdb_search: Arc<Mutex<dyn VecdbSearch>>,
 }
 
 
