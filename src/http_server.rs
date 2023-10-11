@@ -193,7 +193,7 @@ async fn handle_v1_chat(
         ScratchError::new(StatusCode::INTERNAL_SERVER_ERROR,format!("Tokenizer: {}", e))
     )?;
 
-    let vecdb_search = ;
+    let vecdb_search = global_context.read().await.vecdb_search.clone();
     let mut scratchpad = scratchpads::create_chat_scratchpad(
         chat_post.clone(),
         &scratchpad_name,

@@ -10,7 +10,7 @@ use std::io::Write;
 use crate::caps::CodeAssistantCaps;
 use crate::completion_cache::CompletionCache;
 use crate::telemetry_storage;
-use crate::vecdb_search::VecdbSearch;
+use crate::vecdb_search::VecdbSearchTest;
 
 
 #[derive(Debug, StructOpt, Clone)]
@@ -34,7 +34,7 @@ pub struct CommandLine {
 }
 
 
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct GlobalContext {
     pub http_client: reqwest::Client,
     pub ask_shutdown_sender: Arc<Mutex<std::sync::mpsc::Sender<String>>>,
@@ -45,7 +45,7 @@ pub struct GlobalContext {
     pub cmdline: CommandLine,
     pub completions_cache: Arc<StdRwLock<CompletionCache>>,
     pub telemetry: Arc<StdRwLock<telemetry_storage::Storage>>,
-    pub vecdb_search: Arc<Mutex<dyn VecdbSearch>>,
+    pub vecdb_search: Arc<Mutex<VecdbSearchTest>>,
 }
 
 
@@ -124,6 +124,7 @@ pub async fn create_global_context(
         cmdline: cmdline.clone(),
         completions_cache: Arc::new(StdRwLock::new(CompletionCache::new())),
         telemetry: Arc::new(StdRwLock::new(telemetry_storage::Storage::new())),
+        vecdb_search: Arc::new(Mutex::new(crate::vecdb_search::VecdbSearchTest::new())),
     };
     (Arc::new(ARwLock::new(cx)), ask_shutdown_receiver, cmdline)
 }

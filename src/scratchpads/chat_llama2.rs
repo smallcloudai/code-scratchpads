@@ -24,14 +24,14 @@ pub struct ChatLlama2 {
     pub keyword_s: String, // "SYSTEM:" keyword means it's not one token
     pub keyword_slash_s: String,
     pub default_system_message: String,
-    pub vecdb_search: Arc<Mutex<Box<dyn vecdb_search::VecdbSearch>>>,
+    pub vecdb_search: Arc<Mutex<vecdb_search::VecdbSearchTest>>,
 }
 
 impl ChatLlama2 {
     pub fn new(
         tokenizer: Arc<StdRwLock<Tokenizer>>,
         post: ChatPost,
-        vecdb_search: Arc<Mutex<Box<dyn vecdb_search::VecdbSearch>>>,
+        vecdb_search: Arc<Mutex<vecdb_search::VecdbSearchTest>>,
     ) -> Self {
         ChatLlama2 {
             t: HasTokenizerAndEot::new(tokenizer),
@@ -40,7 +40,7 @@ impl ChatLlama2 {
             keyword_s: "<s>".to_string(),
             keyword_slash_s: "</s>".to_string(),
             default_system_message: "".to_string(),
-            vecdb_search: vecdb_search
+            vecdb_search
         }
     }
 }
@@ -98,6 +98,8 @@ impl ScratchpadAbstract for ChatLlama2 {
                 prompt.push_str("[INST]");
             }
         }
+        let vdb_suggestion = self.vecdb_search.search(prompt.as_str());
+
         // This only supports assistant, not suggestions for user
         self.dd.role = "assistant".to_string();
         if DEBUG {

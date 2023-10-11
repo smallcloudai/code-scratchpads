@@ -61,7 +61,7 @@ impl Document {
     }
 }
 
-#[derive(Debug)]
+// #[derive(Debug)]  GlobalContext does not implement Debug
 pub struct Backend {
     pub gcx: Arc<ARwLock<global_context::GlobalContext>>,
     pub client: tower_lsp::Client,

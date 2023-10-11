@@ -51,7 +51,7 @@ impl VecdbSearch for VecdbSearchTest {
         headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
         let body = json!({
             "texts": [query],
-            "account": "smc",
+            "account": "XXX",
             "top_k": 3,
         });
         let res = reqwest::Client::new()

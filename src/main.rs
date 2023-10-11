@@ -55,7 +55,7 @@ async fn main() {
     info!("started");
     info!("cache dir: {}", cache_dir.display());
     test_vecdb().await;
-    return;
+    // return;
 
     let gcx2 = gcx.clone();
     let gcx3 = gcx.clone();
