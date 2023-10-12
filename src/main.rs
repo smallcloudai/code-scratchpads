@@ -26,7 +26,7 @@ use crate::vecdb_search::VecdbSearch;
 async fn test_vecdb()
 {
     let mut v = vecdb_search::VecdbSearchTest::new();
-    let res = v.search("ParallelTasksV3").await;
+    let res = v.sync_search("ParallelTasksV3");
     info!("{:?}", res);
 }
 

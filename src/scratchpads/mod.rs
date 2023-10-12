@@ -46,7 +46,7 @@ pub fn create_chat_scratchpad(
     scratchpad_name: &str,
     scratchpad_patch: &serde_json::Value,
     tokenizer_arc: Arc<StdRwLock<Tokenizer>>,
-    vecdb_search: Arc<Mutex<dyn vecdb_search::VecdbSearch>>,
+    vecdb_search: vecdb_search::VecdbSearchTest,
 ) -> Result<Box<dyn ScratchpadAbstract>, String> {
     let mut result: Box<dyn ScratchpadAbstract>;
     if scratchpad_name == "CHAT-GENERIC" {

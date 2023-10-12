@@ -21,6 +21,7 @@ use crate::custom_error::ScratchError;
 use crate::telemetry_basic;
 use crate::telemetry_snippets;
 use crate::completion_cache;
+use crate::vecdb_search::VecdbSearch;
 
 
 async fn _get_caps_and_tokenizer(
@@ -193,7 +194,8 @@ async fn handle_v1_chat(
         ScratchError::new(StatusCode::INTERNAL_SERVER_ERROR,format!("Tokenizer: {}", e))
     )?;
 
-    let vecdb_search = global_context.read().await.vecdb_search.clone();
+    let mut vecdb_search = global_context.read().await.vecdb_search.lock().unwrap().clone();
+    // let res = vecdb_search.search("").await;
     let mut scratchpad = scratchpads::create_chat_scratchpad(
         chat_post.clone(),
         &scratchpad_name,
