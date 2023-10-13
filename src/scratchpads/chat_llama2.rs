@@ -8,7 +8,9 @@ use crate::scratchpads::chat_utils_limit_history::limit_messages_history;
 use std::sync::Arc;
 use std::sync::RwLock as StdRwLock;
 use std::sync::Mutex;
-use crate::vecdb_search;
+use async_trait::async_trait;
+
+// use crate::vecdb_search;
 use crate::vecdb_search::VecdbSearch;
 
 
@@ -47,6 +49,7 @@ impl ChatLlama2 {
     }
 }
 
+#[async_trait]
 impl ScratchpadAbstract for ChatLlama2 {
     fn apply_model_adaptation_patch(
         &mut self,
@@ -64,7 +67,7 @@ impl ScratchpadAbstract for ChatLlama2 {
         Ok(())
     }
 
-    fn prompt(
+    async fn prompt(
         &mut self,
         context_size: usize,
         sampling_parameters_to_patch: &mut SamplingParameters,

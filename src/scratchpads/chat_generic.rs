@@ -7,6 +7,7 @@ use crate::call_validation::SamplingParameters;
 use crate::scratchpads::chat_utils_limit_history::limit_messages_history;
 use std::sync::Arc;
 use std::sync::RwLock;
+use async_trait::async_trait;
 
 use tokenizers::Tokenizer;
 use tracing::info;
@@ -44,6 +45,7 @@ impl GenericChatScratchpad {
     }
 }
 
+#[async_trait]
 impl ScratchpadAbstract for GenericChatScratchpad {
     fn apply_model_adaptation_patch(
         &mut self,
@@ -68,7 +70,7 @@ impl ScratchpadAbstract for GenericChatScratchpad {
         Ok(())
     }
 
-    fn prompt(
+    async fn prompt(
         &mut self,
         context_size: usize,
         sampling_parameters_to_patch: &mut SamplingParameters,

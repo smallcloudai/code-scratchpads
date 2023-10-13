@@ -8,6 +8,8 @@ use std::sync::RwLock as StdRwLock;
 use tokenizers::Tokenizer;
 use ropey::Rope;
 use tracing::info;
+use async_trait::async_trait;
+
 use crate::completion_cache;
 use crate::telemetry_storage;
 use crate::telemetry_snippets;
@@ -42,6 +44,7 @@ impl SingleFileFIM {
 }
 
 
+#[async_trait]
 impl ScratchpadAbstract for SingleFileFIM {
     fn apply_model_adaptation_patch(
         &mut self,
@@ -59,7 +62,7 @@ impl ScratchpadAbstract for SingleFileFIM {
         Ok(())
     }
 
-    fn prompt(
+    async fn prompt(
         &mut self,
         context_size: usize,
         sampling_parameters_to_patch: &mut SamplingParameters,
