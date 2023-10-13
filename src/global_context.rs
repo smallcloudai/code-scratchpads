@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::sync::RwLock as StdRwLock;
+use tokio::sync::Mutex as AMutex;
 use tokio::sync::RwLock as ARwLock;
 use tokenizers::Tokenizer;
 use structopt::StructOpt;
@@ -10,7 +11,7 @@ use std::io::Write;
 use crate::caps::CodeAssistantCaps;
 use crate::completion_cache::CompletionCache;
 use crate::telemetry_storage;
-use crate::vecdb_search::VecdbSearchTest;
+use crate::vecdb_search::VecdbSearch;
 
 
 #[derive(Debug, StructOpt, Clone)]
@@ -45,7 +46,7 @@ pub struct GlobalContext {
     pub cmdline: CommandLine,
     pub completions_cache: Arc<StdRwLock<CompletionCache>>,
     pub telemetry: Arc<StdRwLock<telemetry_storage::Storage>>,
-    pub vecdb_search: Arc<Mutex<VecdbSearchTest>>,
+    pub vecdb_search: Arc<AMutex<Box<dyn VecdbSearch + Send>>>,
 }
 
 
@@ -124,7 +125,7 @@ pub async fn create_global_context(
         cmdline: cmdline.clone(),
         completions_cache: Arc::new(StdRwLock::new(CompletionCache::new())),
         telemetry: Arc::new(StdRwLock::new(telemetry_storage::Storage::new())),
-        vecdb_search: Arc::new(Mutex::new(crate::vecdb_search::VecdbSearchTest::new())),
+        vecdb_search: Arc::new(AMutex::new(Box::new(crate::vecdb_search::VecdbSearchTest::new()))),
     };
     (Arc::new(ARwLock::new(cx)), ask_shutdown_receiver, cmdline)
 }
