@@ -5,12 +5,11 @@ use crate::call_validation::ChatPost;
 use crate::call_validation::ChatMessage;
 use crate::call_validation::SamplingParameters;
 use crate::scratchpads::chat_utils_limit_history::limit_messages_history;
-use crate::vecdb_search;
-use crate::vecdb_search::VecdbSearch;
 use std::sync::Arc;
 use std::sync::RwLock as StdRwLock;
 use std::sync::Mutex;
-use async_trait::async_trait;
+use crate::vecdb_search;
+use crate::vecdb_search::VecdbSearch;
 
 
 use tokenizers::Tokenizer;
@@ -27,14 +26,14 @@ pub struct ChatLlama2 {
     pub keyword_s: String, // "SYSTEM:" keyword means it's not one token
     pub keyword_slash_s: String,
     pub default_system_message: String,
-    pub vecdb_search: vecdb_search::VecdbSearchTest,
+    pub vecdb_search: Arc<Mutex<dyn VecdbSearch>>,
 }
 
 impl ChatLlama2 {
     pub fn new(
         tokenizer: Arc<StdRwLock<Tokenizer>>,
         post: ChatPost,
-        vecdb_search: vecdb_search::VecdbSearchTest
+        vecdb_search: Arc<Mutex<dyn VecdbSearch>>,
     ) -> Self {
         ChatLlama2 {
             t: HasTokenizerAndEot::new(tokenizer),
@@ -101,12 +100,12 @@ impl ScratchpadAbstract for ChatLlama2 {
                 prompt.push_str("[INST]");
             }
         }
-        let vdb_suggestion = self.vecdb_search.sync_search("abc");
+        // let vdb_suggestion = self.vecdb_search.sync_search("abc");
 
         // This only supports assistant, not suggestions for user
         self.dd.role = "assistant".to_string();
         if DEBUG {
-            info!("llama2 chat vdb_suggestion {:?}", vdb_suggestion);
+            // info!("llama2 chat vdb_suggestion {:?}", vdb_suggestion);
             info!("llama2 chat prompt\n{}", prompt);
             info!("llama2 chat re-encode whole prompt again gives {} tokes", self.t.count_tokens(prompt.as_str())?);
         }

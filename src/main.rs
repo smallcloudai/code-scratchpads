@@ -26,7 +26,7 @@ use crate::vecdb_search::VecdbSearch;
 async fn test_vecdb()
 {
     let mut v = vecdb_search::VecdbSearchTest::new();
-    let res = v.sync_search("ParallelTasksV3");
+    let res = v.search("ParallelTasksV3").await;
     info!("{:?}", res);
 }
 
@@ -55,7 +55,6 @@ async fn main() {
     info!("started");
     info!("cache dir: {}", cache_dir.display());
     test_vecdb().await;
-    // return;
 
     let gcx2 = gcx.clone();
     let gcx3 = gcx.clone();

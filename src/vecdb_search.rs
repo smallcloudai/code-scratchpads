@@ -26,8 +26,6 @@ pub trait VecdbSearch: Send {
         &mut self,
         query: &str,
     ) -> Result<VecdbResult, String>;
-
-    fn sync_search(&mut self, query: &str) -> Result<VecdbResult, String>;
 }
 
 #[derive(Debug, Clone)]
@@ -77,72 +75,4 @@ impl VecdbSearch for VecdbSearchTest {
         // info!("Vecdb search result: {:?}", &result0);
         Ok(result0)
     }
-
-    fn sync_search(&mut self, query: &str) -> Result<VecdbResult, String> {
-        let url = "http://127.0.0.1:8008/v1/vdb-search".to_string();
-        let mut headers = HeaderMap::new();
-        // headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", self.token)).unwrap());
-        headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
-        let body = json!({
-        "texts": [query],
-        "account": "XXX",
-        "top_k": 3,
-    });
-
-        let res = reqwest::blocking::Client::new()
-            .post(&url)
-            .headers(headers)
-            .body(body.to_string())
-            .send()
-            .map_err(|e| format!("Vecdb search HTTP error (1): {}", e));
-
-        let body = res?.text().map_err(|e| format!("Vecdb search HTTP error (2): {}", e))?;
-        let result: Vec<VecdbResult> = serde_json::from_str(&body).map_err(|e| {
-            format!("vecdb JSON problem: {}", e)
-        })?;
-        if result.is_empty() {
-            return Err("Vecdb search result is empty".to_string());
-        }
-        let result0 = result[0].clone();
-        Ok(result0)
-    }
-
 }
-
-
-// trait SyncVecdbSearch {
-//     fn sync_search(&self, query: &str) -> Result<VecdbResult, String>;
-// }
-//
-// impl SyncVecdbSearch for VecdbSearchTest {
-//     fn sync_search(&self, query: &str) -> Result<VecdbResult, String> {
-//         let url = "http://127.0.0.1:8008/v1/vdb-search".to_string();
-//         let mut headers = HeaderMap::new();
-//         // headers.insert(AUTHORIZATION, HeaderValue::from_str(&format!("Bearer {}", self.token)).unwrap());
-//         headers.insert(CONTENT_TYPE, HeaderValue::from_str("application/json").unwrap());
-//         let body = json!({
-//             "texts": [query],
-//             "account": "XXX",
-//             "top_k": 3,
-//         });
-//
-//         let client = reqwest::blocking::Client::new();
-//         let res = client
-//             .post(&url)
-//             .headers(headers)
-//             .body(body.to_string())
-//             .send()
-//             .map_err(|e| format!("Vecdb search HTTP error (1): {}", e))?;
-//
-//         let body = res.text().map_err(|e| format!("Vecdb search HTTP error (2): {}", e))?;
-//         // info!("Vecdb search result: {:?}", &body);
-//         let result: Vec<VecdbResult> = serde_json::from_str(&body).map_err(|e| {
-//             format!("vecdb JSON problem: {}", e)
-//         })?;
-//         if result.is_empty() {
-//             return Err("Vecdb search result is empty".to_string());
-//         }
-//         let result0 = result[0].clone();
-//         Ok(result0)
-//     }
-// }
