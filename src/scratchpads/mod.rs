@@ -51,7 +51,7 @@ pub fn create_chat_scratchpad(
 ) -> Result<Box<dyn ScratchpadAbstract>, String> {
     let mut result: Box<dyn ScratchpadAbstract>;
     if scratchpad_name == "CHAT-GENERIC" {
-        result = Box::new(chat_generic::GenericChatScratchpad::new(tokenizer_arc, post));
+        result = Box::new(chat_generic::GenericChatScratchpad::new(tokenizer_arc, post, vecdb_search));
     } else if scratchpad_name == "CHAT-LLAMA2" {
         result = Box::new(chat_llama2::ChatLlama2::new(tokenizer_arc, post, vecdb_search));
     } else {

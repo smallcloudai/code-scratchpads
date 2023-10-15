@@ -12,7 +12,7 @@ use crate::call_validation::ChatPost;
 use crate::call_validation::ChatMessage;
 use crate::call_validation::SamplingParameters;
 use crate::scratchpads::chat_utils_limit_history::limit_messages_history;
-use crate::vecdb_search::VecdbSearch;
+use crate::vecdb_search::{VecdbSearch, embed_vecdb_results};
 
 
 const DEBUG: bool = true;
@@ -71,14 +71,7 @@ impl ScratchpadAbstract for ChatLlama2 {
         context_size: usize,
         sampling_parameters_to_patch: &mut SamplingParameters,
     ) -> Result<String, String> {
-        let my_vdb = self.vecdb_search.clone();
-        let vdb_result;
-        {
-            let mut vecdb_locked = my_vdb.lock().await;
-            vdb_result = vecdb_locked.search("ParallelTasksV3").await;
-        }
-        info!("llama2 vdb_result {:?}", vdb_result);
-
+        embed_vecdb_results(self.vecdb_search.clone(), &mut self.post, 3).await;
         let limited_msgs: Vec<ChatMessage> = limit_messages_history(&self.t, &self.post, context_size, &self.default_system_message)?;
         sampling_parameters_to_patch.stop = Some(self.dd.stop_list.clone());
         // loosely adapted from https://huggingface.co/spaces/huggingface-projects/llama-2-13b-chat/blob/main/model.py#L24
@@ -110,8 +103,6 @@ impl ScratchpadAbstract for ChatLlama2 {
                 prompt.push_str("[INST]");
             }
         }
-        // let vdb_suggestion = self.vecdb_search.sync_search("abc");
-
         // This only supports assistant, not suggestions for user
         self.dd.role = "assistant".to_string();
         if DEBUG {
