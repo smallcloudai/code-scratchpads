@@ -33,25 +33,23 @@ pub async fn scratchpad_interaction_not_stream(
         let caps_locked = caps.read().unwrap();
         (caps_locked.endpoint_style.clone(), caps_locked.endpoint_template.clone(), cx.telemetry.clone())
     };
-    let mut save_url: String = String::new();
+    let save_url: String = endpoint_template.replace("$MODEL", &model_name).clone();
+
     let model_says = if endpoint_style == "hf" {
         forward_to_hf_endpoint::forward_to_hf_style_endpoint(
-            &mut save_url,
+            &save_url,
             bearer.clone(),
-            &model_name,
             &prompt,
             &client,
-            &endpoint_template,
             &parameters,
         ).await
     } else {
         forward_to_openai_endpoint::forward_to_openai_style_endpoint(
-            &mut save_url,
+            &save_url,
             bearer.clone(),
             &model_name,
             &prompt,
             &client,
-            &endpoint_template,
             &parameters,
         ).await
     }.map_err(|e| {
@@ -141,30 +139,27 @@ pub async fn scratchpad_interaction_stream(
         let caps_locked = caps.read().unwrap();
         (caps_locked.endpoint_style.clone(), caps_locked.endpoint_template.clone(), cx.telemetry.clone())
     };
-    let mut save_url: String = String::new();
+    let save_url: String = endpoint_template.replace("$MODEL", &model_name).clone();
     let mut event_source = if endpoint_style == "hf" {
         forward_to_hf_endpoint::forward_to_hf_style_endpoint_streaming(
-            &mut save_url,
+            &save_url,
             bearer.clone(),
-            &model_name,
             &prompt,
             &client,
-            &endpoint_template,
             &parameters,
         ).await
     } else {
         forward_to_openai_endpoint::forward_to_openai_style_endpoint_streaming(
-            &mut save_url,
+            &save_url,
             bearer.clone(),
             &model_name,
             &prompt,
             &client,
-            &endpoint_template,
             &parameters,
         ).await
     }.map_err(|e| {
         tele_storage.write().unwrap().tele_net.push(telemetry_basic::TelemetryNetwork::new(
-                save_url.clone(),
+                endpoint_template.clone().replace("$MODEL", &model_name),
                 scope.clone(),
                 false,
                 e.to_string(),

@@ -1,16 +1,20 @@
-use tracing::info;
+use tracing::{error, info};
 use std::sync::Arc;
 use tokio::sync::RwLock as ARwLock;
 use std::sync::RwLock as StdRwLock;
+use chrono::{Local};
+use std::path::PathBuf;
 // use std::collections::HashMap;
 // use reqwest_eventsource::Event;
 // use futures::StreamExt;
 // use async_stream::stream;
 // use serde_json::json;
 // use crate::caps::CodeAssistantCaps;
+use crate::telemetry_basic::file_save;
 use crate::call_validation;
 use serde::Deserialize;
 use serde::Serialize;
+use serde_json::json;
 use crate::global_context;
 use crate::completion_cache;
 use crate::telemetry_storage;
@@ -56,6 +60,7 @@ pub struct SnippetTelemetry {
     // pub remaining_percent_300s: f64,
     // pub remaining_percent_walkaway: f64,
     // pub walkaway_ms: u64,
+    pub created_at: i64
 }
 
 pub fn snippet_register(
@@ -71,6 +76,7 @@ pub fn snippet_register(
         accepted: false,
         corrected_by_user: "".to_string(),
         remaining_percent_30s: 0.0,
+        created_at: Local::now().timestamp(),
     };
     storage_locked.tele_snippet_next_id += 1;
     storage_locked.tele_snippets.push(snip);
@@ -108,7 +114,7 @@ pub async fn snippet_accepted(
     return false;
 }
 
-pub async fn sources_changed(
+pub async fn sources_changed( // TODO
     gcx: Arc<ARwLock<global_context::GlobalContext>>,
     uri: &String,
     text: &String,
@@ -135,10 +141,12 @@ pub async fn sources_changed(
         if !orig_text.is_some() {
             continue;
         }
+        let time_from_creation = Local::now().timestamp() - snip.created_at;
         let (valid1, mut gray_suggested) = if_head_tail_equal_return_added_text(
             orig_text.unwrap(),
             text
         );
+        snip.corrected_by_user = gray_suggested.clone();
         gray_suggested = gray_suggested.replace("\r", "");
         info!("valid1: {:?}, gray_suggested: {:?}", valid1, gray_suggested);
         info!("orig grey_text: {:?}", snip.grey_text);
@@ -219,3 +227,55 @@ pub fn unchanged_percentage(
     let largest_of_two = text_a.len().max(text_b.len());
     (common as f64) / (largest_of_two as f64)
 }
+
+fn _compress_telemetry_snippets(
+    storage: Arc<StdRwLock<telemetry_storage::Storage>>,
+) -> serde_json::Value {
+    let mut records = serde_json::json!([]);
+    {
+        let storage_locked = storage.read().unwrap();
+        for rec in storage_locked.tele_snippets.iter() {
+            let json_dict = serde_json::to_value(rec).unwrap();
+            records.as_array_mut().unwrap().push(json_dict);
+        }
+    }
+    records
+}
+
+
+pub async fn compress_telemetry_snippets_to_file(
+    cx: Arc<ARwLock<global_context::GlobalContext>>,
+) {
+    let now = chrono::Local::now();
+    let cache_dir: PathBuf;
+    let storage: Arc<StdRwLock<telemetry_storage::Storage>>;
+    let enduser_client_version;
+    {
+        let cx_locked = cx.read().await;
+        storage = cx_locked.telemetry.clone();
+        cache_dir = cx_locked.cache_dir.clone();
+        enduser_client_version = cx_locked.cmdline.enduser_client_version.clone();
+    }
+    let dir = cache_dir.join("telemetry").join("compressed");
+    tokio::fs::create_dir_all(dir.clone()).await.unwrap_or_else(|_| {});
+
+    let records = _compress_telemetry_snippets(storage.clone());
+    let fn_snip = dir.join(format!("{}-snip.json", now.format("%Y%m%d-%H%M%S")));
+    let mut big_json_snip = json!({
+        "records": records,
+        "ts_end": now.timestamp(),
+        "teletype": "snippets",
+        "enduser_client_version": enduser_client_version,
+    });
+    {
+        let mut storage_locked = storage.write().unwrap();
+        storage_locked.tele_snippets.clear();
+        big_json_snip.as_object_mut().unwrap().insert("ts_start".to_string(), json!(storage_locked.last_flushed_ts));
+        storage_locked.last_flushed_ts = now.timestamp();
+    }
+    let io_result = file_save(fn_snip, big_json_snip).await;
+    if io_result.is_err() {
+        error!("cannot save telemetry file: {}", io_result.err().unwrap());
+    }
+}
+
